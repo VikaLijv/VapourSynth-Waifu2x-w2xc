@@ -42,12 +42,11 @@ static inline bool isPowerOf2(const int i) {
 
 static bool Waifu2x(const VSFrameRef * src, VSFrameRef * dst, float * VS_RESTRICT srcInterleaved, float * VS_RESTRICT dstInterleaved, float * VS_RESTRICT buffer,
                     W2XConv * conv, const Waifu2xData * d, const VSAPI * vsapi) {
-    const int width = vsapi->getFrameWidth(src, 0);
-    const int height = vsapi->getFrameHeight(src, 0);
-    const int srcStride = vsapi->getStride(src, 0) / sizeof(float);
-    const int dstStride = vsapi->getStride(dst, 0) / sizeof(float);
-
     if (d->vi.format->colorFamily == cmRGB) {
+        const int width = vsapi->getFrameWidth(src, 0);
+        const int height = vsapi->getFrameHeight(src, 0);
+        const int srcStride = vsapi->getStride(src, 0) / sizeof(float);
+        const int dstStride = vsapi->getStride(dst, 0) / sizeof(float);
         const float * srcpR = reinterpret_cast<const float *>(vsapi->getReadPtr(src, 0));
         const float * srcpG = reinterpret_cast<const float *>(vsapi->getReadPtr(src, 1));
         const float * srcpB = reinterpret_cast<const float *>(vsapi->getReadPtr(src, 2));
@@ -83,40 +82,85 @@ static bool Waifu2x(const VSFrameRef * src, VSFrameRef * dst, float * VS_RESTRIC
             dstpB += dstStride;
         }
     } else {
-        const float * srcp = reinterpret_cast<const float *>(vsapi->getReadPtr(src, 0));
-        float * VS_RESTRICT dstp = reinterpret_cast<float *>(vsapi->getWritePtr(dst, 0));
+        for (int plane = 0; plane < d->vi.format->numPlanes; plane++) {
+            const int width = vsapi->getFrameWidth(src, plane);
+            const int height = vsapi->getFrameHeight(src, plane);
+            const int srcStride = vsapi->getStride(src, plane) / sizeof(float);
+            const int dstStride = vsapi->getStride(dst, plane) / sizeof(float);
+            const float * srcp = reinterpret_cast<const float *>(vsapi->getReadPtr(src, plane));
+            float * VS_RESTRICT dstp = reinterpret_cast<float *>(vsapi->getWritePtr(dst, plane));
 
-        if (d->noise > 0) {
-            if (w2xconv_apply_filter_y(conv, static_cast<W2XConvFilterType>(d->noise - 1), reinterpret_cast<unsigned char *>(dstp), vsapi->getStride(dst, 0),
-                                       const_cast<unsigned char *>(reinterpret_cast<const unsigned char *>(srcp)), vsapi->getStride(src, 0), width, height, d->block) < 0)
-                return false;
-        }
+            if (plane != 0) {
+                const float * input = srcp;
 
-        if (d->scale > 1) {
-            if (d->noise == 0)
-                vs_bitblt(dstp, vsapi->getStride(dst, 0), srcp, vsapi->getStride(src, 0), width * sizeof(float), height);
-
-            for (int n = 0; n < d->iterTimesTwiceScaling; n++) {
-                const int currentWidth = width << n;
-                const int currentHeight = height << n;
-                const int currentWidth2 = currentWidth * 2;
-                const int currentHeight2 = currentHeight * 2;
-                const float * dstp2 = dstp;
-
-                for (int y = 0; y < currentHeight; y++) {
-                    for (int x = 0; x < currentWidth; x++) {
-                        const int pos = y * 2 * currentWidth2 + x * 2;
-                        buffer[pos] = dstp2[x];
-                        buffer[pos + 1] = dstp2[x];
-                        buffer[pos + currentWidth2] = dstp2[x];
-                        buffer[pos + currentWidth2 + 1] = dstp2[x];
+                if (d->noise == 0) {
+                    float * VS_RESTRICT output = dstp;
+                    for (int y = 0; y < height; y++) {
+                        for (int x = 0; x < width; x++)
+                            output[x] = input[x] + 0.5f;
+                        input += srcStride;
+                        output += dstStride;
                     }
-                    dstp2 += dstStride;
+                } else {
+                    float * VS_RESTRICT output = buffer;
+                    for (int y = 0; y < height; y++) {
+                        for (int x = 0; x < width; x++)
+                            output[x] = input[x] + 0.5f;
+                        input += srcStride;
+                        output += width;
+                    }
                 }
+            }
 
-                if (w2xconv_apply_filter_y(conv, W2XCONV_FILTER_SCALE2x, reinterpret_cast<unsigned char *>(dstp), vsapi->getStride(dst, 0),
-                                           reinterpret_cast<unsigned char *>(buffer), currentWidth2 * sizeof(float), currentWidth2, currentHeight2, d->block) < 0)
-                    return false;
+            if (d->noise != 0) {
+                if (plane == 0) {
+                    if (w2xconv_apply_filter_y(conv, static_cast<W2XConvFilterType>(d->noise - 1), reinterpret_cast<unsigned char *>(dstp), vsapi->getStride(dst, plane),
+                                               const_cast<unsigned char *>(reinterpret_cast<const unsigned char *>(srcp)), vsapi->getStride(src, plane), width, height, d->block) < 0)
+                        return false;
+                } else {
+                    if (w2xconv_apply_filter_y(conv, static_cast<W2XConvFilterType>(d->noise - 1), reinterpret_cast<unsigned char *>(dstp), vsapi->getStride(dst, plane),
+                                               reinterpret_cast<unsigned char *>(buffer), width * sizeof(float), width, height, d->block) < 0)
+                        return false;
+                }
+            }
+
+            if (d->scale != 1) {
+                if (d->noise == 0 && plane == 0)
+                    vs_bitblt(dstp, vsapi->getStride(dst, plane), srcp, vsapi->getStride(src, plane), width * sizeof(float), height);
+
+                for (int n = 0; n < d->iterTimesTwiceScaling; n++) {
+                    const int currentWidth = width << n;
+                    const int currentHeight = height << n;
+                    const int currentWidth2 = currentWidth * 2;
+                    const int currentHeight2 = currentHeight * 2;
+                    const float * input = dstp;
+
+                    for (int y = 0; y < currentHeight; y++) {
+                        for (int x = 0; x < currentWidth; x++) {
+                            const int pos = y * 2 * currentWidth2 + x * 2;
+                            buffer[pos] = input[x];
+                            buffer[pos + 1] = input[x];
+                            buffer[pos + currentWidth2] = input[x];
+                            buffer[pos + currentWidth2 + 1] = input[x];
+                        }
+                        input += dstStride;
+                    }
+
+                    if (w2xconv_apply_filter_y(conv, W2XCONV_FILTER_SCALE2x, reinterpret_cast<unsigned char *>(dstp), vsapi->getStride(dst, plane),
+                                               reinterpret_cast<unsigned char *>(buffer), currentWidth2 * sizeof(float), currentWidth2, currentHeight2, d->block) < 0)
+                        return false;
+                }
+            }
+
+            if (plane != 0) {
+                const int dstWidth = vsapi->getFrameWidth(dst, plane);
+                const int dstHeight = vsapi->getFrameHeight(dst, plane);
+
+                for (int y = 0; y < dstHeight; y++) {
+                    for (int x = 0; x < dstWidth; x++)
+                        dstp[x] -= 0.5f;
+                    dstp += dstStride;
+                }
             }
         }
     }
@@ -158,8 +202,7 @@ static const VSFrameRef *VS_CC waifu2xGetFrame(int n, int activationReason, void
             }
         }
 
-        const VSPlugin * waifu2xPlugin = vsapi->getPluginById("com.holywu.waifu2x", core);
-        std::string pluginPath(vsapi->getPluginPath(waifu2xPlugin));
+        std::string pluginPath(vsapi->getPluginPath(vsapi->getPluginById("com.holywu.waifu2x", core)));
         pluginPath = pluginPath.substr(0, pluginPath.find_last_of('/'));
         if (d->vi.format->colorFamily == cmRGB) {
             if (d->photo)
@@ -248,13 +291,25 @@ static void VS_CC waifu2xCreate(const VSMap *in, VSMap *out, void *userData, VSC
         return;
     }
 
-    if (!isConstantFormat(&d.vi) || d.vi.format->sampleType != stFloat || d.vi.format->bitsPerSample != 32 || (d.vi.format->colorFamily != cmGray && d.vi.format->colorFamily != cmRGB)) {
-        vsapi->setError(out, "Waifu2x: only constant format 32-bit float of Gray or RGB input supported");
+    if (!isConstantFormat(&d.vi) || d.vi.format->sampleType != stFloat || d.vi.format->bitsPerSample != 32) {
+        vsapi->setError(out, "Waifu2x: only constant format 32-bit float input supported");
         vsapi->freeNode(d.node);
         return;
     }
 
-    if (d.scale > 1) {
+    if (d.scale != 1 && d.vi.format->subSamplingW > 2) {
+        vsapi->setError(out, "Waifu2x: horizontal subsampling larger than 2 is not supported");
+        vsapi->freeNode(d.node);
+        return;
+    }
+
+    VSPlugin * fmtcPlugin = vsapi->getPluginById("fmtconv", core);
+    if (d.scale != 1 && d.vi.format->subSamplingW != 0 && !fmtcPlugin) {
+        vsapi->setError(out, "Waifu2x: the fmtconv plugin is required for fixing horizontal chroma shift");
+        return;
+    }
+
+    if (d.scale != 1) {
         d.vi.width *= d.scale;
         d.vi.height *= d.scale;
         d.iterTimesTwiceScaling = static_cast<int>(std::log2(d.scale));
@@ -263,6 +318,37 @@ static void VS_CC waifu2xCreate(const VSMap *in, VSMap *out, void *userData, VSC
     Waifu2xData * data = new Waifu2xData(d);
 
     vsapi->createFilter(in, out, "Waifu2x", waifu2xInit, waifu2xGetFrame, waifu2xFree, fmParallelRequests, 0, data, core);
+
+    if (d.scale != 1 && d.vi.format->subSamplingW != 0) {
+        const double offset = (d.vi.format->subSamplingW == 1) ? 0.5 : 1.5;
+        double shift = 0.;
+        for (int n = 0; n < d.iterTimesTwiceScaling; n++)
+            shift = shift * 2. + offset;
+
+        VSNodeRef * node = vsapi->propGetNode(out, "clip", 0, nullptr);
+        vsapi->clearMap(out);
+        VSMap * args = vsapi->createMap();
+        vsapi->propSetNode(args, "clip", node, paReplace);
+        vsapi->freeNode(node);
+        vsapi->propSetFloat(args, "sx", shift, paReplace);
+        vsapi->propSetFloat(args, "planes", 2, paReplace);
+        vsapi->propSetFloat(args, "planes", 3, paAppend);
+        vsapi->propSetFloat(args, "planes", 3, paAppend);
+
+        VSMap * ret = vsapi->invoke(fmtcPlugin, "resample", args);
+        if (vsapi->getError(ret)) {
+            vsapi->setError(out, vsapi->getError(ret));
+            vsapi->freeMap(args);
+            vsapi->freeMap(ret);
+            return;
+        }
+
+        node = vsapi->propGetNode(ret, "clip", 0, nullptr);
+        vsapi->freeMap(args);
+        vsapi->freeMap(ret);
+        vsapi->propSetNode(out, "clip", node, paReplace);
+        vsapi->freeNode(node);
+    }
 }
 
 //////////////////////////////////////////
