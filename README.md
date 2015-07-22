@@ -19,6 +19,8 @@ Usage
 
     w2xc.Waifu2x(clip clip[, int noise=1, int scale=2, int block=512, bint photo=False, bint gpu=True])
 
+* clip: The input clip. Must be 32-bit floating point. Any planar color family is supported.
+
 * noise: Denoising level.
   * 0 = no denoising
   * 1 = weak denoising
