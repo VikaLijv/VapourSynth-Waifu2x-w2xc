@@ -13,7 +13,7 @@ Note
 ====
 The folder `models` must be located in the same folder as `Waifu2x-w2xc.dll`.
 
-The filter will generate .bin files at the same location of the model files for the first time it runs. Make sure that your executable has write permission to the folder of the model files. The filter still can run even without the .bin files generated, but the performance will degrade.
+The filter will generate .bin files at the same location of the model files for the first time it runs. Make sure that your executable has write permission to the folder of the model files. The filter still can run even without the .bin files generated, but the performance will degrade. When you update the model files in the future, remember to delete the .bin files as well.
 
 
 Usage
