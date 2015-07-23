@@ -11,6 +11,8 @@ waifu2x filter for VapourSynth, based on the w2xc library. It runs on the first 
 
 Note
 ====
+The folder `models` must be located in the same folder as `Waifu2x-w2xc.dll`.
+
 The filter will generate .bin files at the same location of the model files for the first time it runs. Make sure that your executable has write permission to the folder of the model files. The filter still can run even without the .bin files generated, but the performance will degrade.
 
 
@@ -30,7 +32,7 @@ Usage
 
 * block: The block size for dividing the image during processing. Smaller value results in lower VRAM usage, while larger value may give faster speed. It may be more efficient when the block size is a common divisor of the width and height.
 
-* photo: When set to true, the photo model will be used for upscaling. Currently there are no photo models released for denoising yet, so the anime models will be used for denoising at the moment, which may give inferior results. When set to false, the anime models are used for both denoising and upscaling. There are two sets of models for anime, one is trained for RGB, the other is trained for Y (luma only). The RGB model is loaded when the color family of the input is RGB, and the Y (luma only) model is loaded for all the other color family. Note that photo model is only available for RGB, so this parameter has no effect for non-RGB input.
+* photo: When set to false, the anime model will be used for both denoising and upscaling. When set to true, the photo model will be used only for upscaling. Currently there is no photo model released for denoising yet, so the anime model will be used for denoising at the moment, which may give inferior results. There are two sets of models for anime, one is trained for RGB, the other is trained for Y (luma only). The RGB model will be loaded when the color family of the input is RGB, and the Y (luma only) model will be loaded for all the other color family. Note that the photo model is only available for RGB, so this parameter has no effect for non-RGB input.
 
 * gpu: Whether the calculation is done on GPU or CPU.
 
