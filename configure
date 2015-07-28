@@ -200,6 +200,12 @@ else
 fi
 
 
+log_echo "checking for w2xc..."
+if ! cc_check "$CXXFLAGS" "$LDFLAGS $LIBS $XLIBS" "w2xconv.h" "w2xconv_free(nullptr);" ; then
+    log_echo "error: w2xc checking failed."
+    error_exit "w2xconv.h might not be installed or some libs missing."
+fi
+
 log_echo "checking for vapoursynth headers..."
 if $PKGCONFIGBIN --exists vapoursynth 2> /dev/null; then
     CXXFLAGS="$CXXFLAGS $($PKGCONFIGBIN --cflags vapoursynth)"
@@ -209,12 +215,6 @@ fi
 if ! cc_check "$CXXFLAGS" "$LDFLAGS $LIBS $XLIBS" "VapourSynth.h" "getVapourSynthAPI;" ; then
     log_echo "error: vapoursynth checking failed."
     error_exit "VapourSynth.h might not be installed."
-fi
-
-log_echo "checking for w2xc..."
-if ! cc_check "$CXXFLAGS" "$LDFLAGS $LIBS $XLIBS" "w2xconv.h" "w2xconv_free(nullptr);" ; then
-    log_echo "error: w2xc checking failed."
-    error_exit "w2xconv.h might not be installed or some libs missing."
 fi
 
 LDFLAGS="$SOFLAGS $LDFLAGS"
