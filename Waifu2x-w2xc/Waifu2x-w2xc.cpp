@@ -32,7 +32,8 @@ struct Waifu2xData {
     VSNodeRef * node;
     VSVideoInfo vi;
     int noise, scale, block;
-    bool photo, gpu;
+    bool photo, log;
+    W2XConvGPUMode gpu;
     int iterTimesTwiceScaling;
 };
 
@@ -213,7 +214,7 @@ static const VSFrameRef *VS_CC waifu2xGetFrame(int n, int activationReason, void
             pluginPath = pluginPath.append("/models/anime_style_art");
         }
 
-        W2XConv * conv = w2xconv_init(d->gpu, 0, 0);
+        W2XConv * conv = w2xconv_init(d->gpu, 0, d->log);
         if (w2xconv_load_models(conv, pluginPath.c_str()) < 0) {
             char * err = w2xconv_strerror(&conv->last_error);
             vsapi->setFilterError(std::string("Waifu2x: ").append(err).c_str(), frameCtx);
@@ -265,9 +266,10 @@ static void VS_CC waifu2xCreate(const VSMap *in, VSMap *out, void *userData, VSC
     if (err)
         d.block = 512;
     d.photo = !!vsapi->propGetInt(in, "photo", 0, &err);
-    d.gpu = !!vsapi->propGetInt(in, "gpu", 0, &err);
+    d.gpu = static_cast<W2XConvGPUMode>(int64ToIntS(vsapi->propGetInt(in, "gpu", 0, &err)));
     if (err)
-        d.gpu = true;
+        d.gpu = W2XCONV_GPU_AUTO;
+    d.log = !!vsapi->propGetInt(in, "log", 0, &err);
 
     if (d.noise < 0 || d.noise > 2) {
         vsapi->setError(out, "Waifu2x: noise must be set to 0, 1 or 2");
@@ -279,6 +281,10 @@ static void VS_CC waifu2xCreate(const VSMap *in, VSMap *out, void *userData, VSC
     }
     if (d.block < 1) {
         vsapi->setError(out, "Waifu2x: block must be greater than or equal to 1");
+        return;
+    }
+    if (d.gpu < 0 || d.gpu > 2) {
+        vsapi->setError(out, "Waifu2x: gpu must be set to 0, 1 or 2");
         return;
     }
 
@@ -356,5 +362,5 @@ static void VS_CC waifu2xCreate(const VSMap *in, VSMap *out, void *userData, VSC
 
 VS_EXTERNAL_API(void) VapourSynthPluginInit(VSConfigPlugin configFunc, VSRegisterFunction registerFunc, VSPlugin *plugin) {
     configFunc("com.holywu.waifu2x", "w2xc", "Image Super-Resolution using Deep Convolutional Neural Networks", VAPOURSYNTH_API_VERSION, 1, plugin);
-    registerFunc("Waifu2x", "clip:clip;noise:int:opt;scale:int:opt;block:int:opt;photo:int:opt;gpu:int:opt;", waifu2xCreate, nullptr, plugin);
+    registerFunc("Waifu2x", "clip:clip;noise:int:opt;scale:int:opt;block:int:opt;photo:int:opt;gpu:int:opt;log:int:opt;", waifu2xCreate, nullptr, plugin);
 }

@@ -1,12 +1,7 @@
 Description
 ===========
 
-waifu2x filter for VapourSynth, based on the w2xc library. It runs on the first available environment of the following order:
-* CUDA
-* AMD OpenCL
-* FMA
-* AVX
-* OpenCV filter2D
+waifu2x filter for VapourSynth, based on the w2xc library.
 
 
 Note
@@ -19,7 +14,7 @@ The filter will generate .bin files at the same location of the model files for 
 Usage
 =====
 
-    w2xc.Waifu2x(clip clip[, int noise=1, int scale=2, int block=512, bint photo=False, bint gpu=True])
+    w2xc.Waifu2x(clip clip[, int noise=1, int scale=2, int block=512, bint photo=False, int gpu=1, bint log=False])
 
 * clip: The input clip. Must be 32-bit floating point. Any planar color family is supported.
 
@@ -32,9 +27,20 @@ Usage
 
 * block: The block size for dividing the image during processing. Smaller value results in lower VRAM usage, while larger value may give faster speed. It may be more efficient when the block size is a common divisor of the width and height.
 
-* photo: When set to false, the anime model will be used for both denoising and upscaling. When set to true, the photo model will be used only for upscaling. Currently there is no photo model released for denoising yet, so the anime model will be used for denoising at the moment, which may give inferior results. There are two sets of models for anime, one is trained for RGB, the other is trained for Y (luma only). The RGB model will be loaded when the color family of the input is RGB, and the Y (luma only) model will be loaded for all the other color family. Note that the photo model is only available for RGB, so this parameter has no effect for non-RGB input.
+* photo: When set to false, the anime model will be used for both denoising and upscaling. When set to true, the photo model will be used only for upscaling. Currently there is no photo model released for denoising yet, so the anime model will be used for denoising at the moment, which may give inferior results. There are two sets of models for anime, one is trained under RGB, the other is trained under Y (luma only). The RGB model will be used when the color family of the input is RGB, and the Y model will be used for all the other color family. Note that the photo model is only available for RGB, so this parameter has no effect for non-RGB input.
 
-* gpu: Whether the calculation is done on GPU or CPU.
+* gpu: Controls the environment to use.
+  * 0 = disable GPU
+  * 1 = auto detect. It will run on the first available environment in the following order:
+    * CUDA
+    * AMD OpenCL
+    * FMA
+    * AVX
+    * Intel OpenCL
+    * OpenCV filter2D
+  * 2 = force to use OpenCL on Intel platform
+
+* log: Whether the internal processing stats will be written to stdout.
 
 
 Dependencies

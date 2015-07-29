@@ -74,13 +74,13 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>C:\Program Files %28x86%29\VapourSynth\sdk\include;C:\waifu2x-converter_x86_0719;$(IncludePath)</IncludePath>
-    <LibraryPath>C:\waifu2x-converter_x86_0719;$(LibraryPath)</LibraryPath>
+    <IncludePath>C:\Program Files %28x86%29\VapourSynth\sdk\include;C:\waifu2x-converter_x86_0726;$(IncludePath)</IncludePath>
+    <LibraryPath>C:\waifu2x-converter_x86_0726;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>C:\Program Files %28x86%29\VapourSynth\sdk\include;C:\waifu2x-converter_x64_0719;$(IncludePath)</IncludePath>
-    <LibraryPath>C:\waifu2x-converter_x64_0719;$(LibraryPath)</LibraryPath>
+    <IncludePath>C:\Program Files %28x86%29\VapourSynth\sdk\include;C:\waifu2x-converter_x64_0726;$(IncludePath)</IncludePath>
+    <LibraryPath>C:\waifu2x-converter_x64_0726;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
