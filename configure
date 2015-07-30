@@ -90,7 +90,6 @@ LIBNAME=""
 CXXFLAGS="-std=c++11 -Wall -I. -I$SRCDIR/include"
 LDFLAGS=""
 SOFLAGS="-shared"
-DEPLIBS="w2xc"
 
 TARGET="-msse2"
 
@@ -189,18 +188,9 @@ PKGCONFIGBIN="pkg-config"
 test -n "$(which ${CROSS}${PKGCONFIGBIN} 2> /dev/null)" && \
     PKGCONFIGBIN=${CROSS}${PKGCONFIGBIN}
 
-if $PKGCONFIGBIN --exists $DEPLIBS 2> /dev/null; then
-    LIBS="$($PKGCONFIGBIN --libs $DEPLIBS)"
-    CXXFLAGS="$CXXFLAGS $($PKGCONFIGBIN --cflags $DEPLIBS)"
-else
-    for lib in $DEPLIBS; do
-        LIBS="$LIBS -l${lib#lib}"
-    done
-    log_echo "warning: pkg-config or pc files not found, lib detection may be inaccurate."
-fi
-
 
 log_echo "checking for w2xc..."
+LIBS="$LIBS -lw2xc"
 if ! cc_check "$CXXFLAGS" "$LDFLAGS $LIBS $XLIBS" "w2xconv.h" "w2xconv_free(nullptr);" ; then
     log_echo "error: w2xc checking failed."
     error_exit "w2xconv.h might not be installed or some libs missing."
