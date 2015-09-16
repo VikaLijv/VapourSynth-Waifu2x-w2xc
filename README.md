@@ -18,14 +18,14 @@ Usage
 
 * clip: The input clip. Must be 32-bit floating point. Any planar color family is supported.
 
-* noise: Denoising level.
-  * 0 = no denoising
-  * 1 = weak denoising
-  * 2 = strong denoising
+* noise: Noise reduction level.
+  * 0 = none
+  * 1 = low
+  * 2 = high
 
 * scale: Upscaling factor. Must be a power of 2. Set to 1 for no upscaling.
 
-* block: The block size for dividing the image during processing. Smaller value results in lower VRAM usage, while larger value may give faster speed. It may be more efficient when the block size is a common divisor of the width and height.
+* block: The block size for dividing the image during processing. Smaller value results in lower VRAM usage, while larger value may give faster speed. The optimal value may vary according to different graphics card and image size.
 
 * photo: When set to false, the anime model will be used for both denoising and upscaling. When set to true, the photo model will be used only for upscaling. Currently there is no photo model released for denoising yet, so the anime model will be used for denoising at the moment, which may give inferior results. There are two sets of models for anime, one is trained under RGB, the other is trained under Y (luma only). The RGB model will be used when the color family of the input is RGB, and the Y model will be used for all the other color family. Note that the photo model is only available for RGB, so this parameter has no effect for non-RGB input.
 
