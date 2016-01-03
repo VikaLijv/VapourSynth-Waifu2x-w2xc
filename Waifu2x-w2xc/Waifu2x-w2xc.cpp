@@ -355,6 +355,7 @@ static void VS_CC waifu2xCreate(const VSMap *in, VSMap *out, void *userData, VSC
     VSPlugin * fmtcPlugin = vsapi->getPluginById("fmtconv", core);
     if (d.scale != 1 && d.vi.format->subSamplingW != 0 && !fmtcPlugin) {
         vsapi->setError(out, "Waifu2x: the fmtconv plugin is required for fixing horizontal chroma shift");
+        vsapi->freeNode(d.node);
         return;
     }
 
