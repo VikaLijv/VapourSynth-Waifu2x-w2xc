@@ -187,7 +187,7 @@ static const VSFrameRef *VS_CC waifu2xGetFrame(int n, int activationReason, void
             srcInterleaved = vs_aligned_malloc<float>(vsapi->getFrameWidth(src, 0) * vsapi->getFrameHeight(src, 0) * 3 * sizeof(float), 32);
             dstInterleaved = vs_aligned_malloc<float>(d->vi.width * d->vi.height * 3 * sizeof(float), 32);
             if (!srcInterleaved || !dstInterleaved) {
-                vsapi->setFilterError("Waifu2x: malloc failure (srcInterleaved/dstInterleaved)", frameCtx);
+                vsapi->setFilterError("Waifu2x-w2xc: malloc failure (srcInterleaved/dstInterleaved)", frameCtx);
                 vsapi->freeFrame(src);
                 vsapi->freeFrame(dst);
                 return nullptr;
@@ -195,7 +195,7 @@ static const VSFrameRef *VS_CC waifu2xGetFrame(int n, int activationReason, void
         } else {
             buffer = vs_aligned_malloc<float>(d->vi.width * d->vi.height * sizeof(float), 32);
             if (!buffer) {
-                vsapi->setFilterError("Waifu2x: malloc failure (buffer)", frameCtx);
+                vsapi->setFilterError("Waifu2x-w2xc: malloc failure (buffer)", frameCtx);
                 vsapi->freeFrame(src);
                 vsapi->freeFrame(dst);
                 return nullptr;
@@ -204,7 +204,7 @@ static const VSFrameRef *VS_CC waifu2xGetFrame(int n, int activationReason, void
 
         if (!Waifu2x(src, dst, srcInterleaved, dstInterleaved, buffer, d, vsapi)) {
             char * err = w2xconv_strerror(&d->conv->last_error);
-            vsapi->setFilterError(std::string("Waifu2x: ").append(err).c_str(), frameCtx);
+            vsapi->setFilterError(std::string("Waifu2x-w2xc: ").append(err).c_str(), frameCtx);
             vsapi->freeFrame(src);
             vsapi->freeFrame(dst);
             w2xconv_free(err);
@@ -260,27 +260,27 @@ static void VS_CC waifu2xCreate(const VSMap *in, VSMap *out, void *userData, VSC
     const W2XConvProcessor * processors = w2xconv_get_processor_list(&numProcessors);
 
     if (d.noise < 0 || d.noise > 2) {
-        vsapi->setError(out, "Waifu2x: noise must be set to 0, 1 or 2");
+        vsapi->setError(out, "Waifu2x-w2xc: noise must be set to 0, 1 or 2");
         return;
     }
 
     if (d.scale < 1 || !isPowerOf2(d.scale)) {
-        vsapi->setError(out, "Waifu2x: scale must be greater than or equal to 1 and be a power of 2");
+        vsapi->setError(out, "Waifu2x-w2xc: scale must be greater than or equal to 1 and be a power of 2");
         return;
     }
 
     if (d.block < 1) {
-        vsapi->setError(out, "Waifu2x: block must be greater than or equal to 1");
+        vsapi->setError(out, "Waifu2x-w2xc: block must be greater than or equal to 1");
         return;
     }
 
     if (processor >= numProcessors) {
-        vsapi->setError(out, "Waifu2x: selected processor is not available");
+        vsapi->setError(out, "Waifu2x-w2xc: selected processor is not available");
         return;
     }
 
     if (gpu < 0 || gpu > 2) {
-        vsapi->setError(out, "Waifu2x: gpu must be set to 0, 1 or 2");
+        vsapi->setError(out, "Waifu2x-w2xc: gpu must be set to 0, 1 or 2");
         return;
     }
 
@@ -354,14 +354,14 @@ static void VS_CC waifu2xCreate(const VSMap *in, VSMap *out, void *userData, VSC
     }
 
     if (!isConstantFormat(&d.vi) || d.vi.format->sampleType != stFloat || d.vi.format->bitsPerSample != 32) {
-        vsapi->setError(out, "Waifu2x: only constant format 32-bit float input supported");
+        vsapi->setError(out, "Waifu2x-w2xc: only constant format 32-bit float input supported");
         vsapi->freeNode(d.node);
         return;
     }
 
     VSPlugin * fmtcPlugin = vsapi->getPluginById("fmtconv", core);
     if (d.scale != 1 && d.vi.format->subSamplingW != 0 && !fmtcPlugin) {
-        vsapi->setError(out, "Waifu2x: the fmtconv plugin is required for fixing horizontal chroma shift");
+        vsapi->setError(out, "Waifu2x-w2xc: the fmtconv plugin is required for fixing horizontal chroma shift");
         vsapi->freeNode(d.node);
         return;
     }
@@ -377,7 +377,7 @@ static void VS_CC waifu2xCreate(const VSMap *in, VSMap *out, void *userData, VSC
     else
         d.conv = w2xconv_init(gpu, 0, log);
 
-    const std::string pluginPath(vsapi->getPluginPath(vsapi->getPluginById("com.holywu.waifu2x", core)));
+    const std::string pluginPath(vsapi->getPluginPath(vsapi->getPluginById("com.holywu.waifu2x-w2xc", core)));
     std::string modelPath = pluginPath.substr(0, pluginPath.find_last_of('/'));
     if (d.vi.format->colorFamily == cmRGB) {
         if (photo)
@@ -390,7 +390,7 @@ static void VS_CC waifu2xCreate(const VSMap *in, VSMap *out, void *userData, VSC
 
     if (w2xconv_load_models(d.conv, modelPath.c_str()) < 0) {
         char * err = w2xconv_strerror(&d.conv->last_error);
-        vsapi->setError(out, std::string("Waifu2x: ").append(err).c_str());
+        vsapi->setError(out, std::string("Waifu2x-w2xc: ").append(err).c_str());
         vsapi->freeNode(d.node);
         w2xconv_free(err);
         w2xconv_fini(d.conv);
@@ -399,7 +399,7 @@ static void VS_CC waifu2xCreate(const VSMap *in, VSMap *out, void *userData, VSC
 
     Waifu2xData * data = new Waifu2xData(d);
 
-    vsapi->createFilter(in, out, "Waifu2x", waifu2xInit, waifu2xGetFrame, waifu2xFree, fmParallelRequests, 0, data, core);
+    vsapi->createFilter(in, out, "Waifu2x-w2xc", waifu2xInit, waifu2xGetFrame, waifu2xFree, fmParallelRequests, 0, data, core);
 
     if (d.scale != 1 && d.vi.format->subSamplingW != 0) {
         const double offset = 0.5 * (1 << d.vi.format->subSamplingW) - 0.5;
@@ -437,7 +437,7 @@ static void VS_CC waifu2xCreate(const VSMap *in, VSMap *out, void *userData, VSC
 // Init
 
 VS_EXTERNAL_API(void) VapourSynthPluginInit(VSConfigPlugin configFunc, VSRegisterFunction registerFunc, VSPlugin *plugin) {
-    configFunc("com.holywu.waifu2x", "w2xc", "Image Super-Resolution using Deep Convolutional Neural Networks", VAPOURSYNTH_API_VERSION, 1, plugin);
+    configFunc("com.holywu.waifu2x-w2xc", "w2xc", "Image Super-Resolution using Deep Convolutional Neural Networks", VAPOURSYNTH_API_VERSION, 1, plugin);
     registerFunc("Waifu2x",
                  "clip:clip;"
                  "noise:int:opt;"
