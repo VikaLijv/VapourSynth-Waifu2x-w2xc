@@ -250,8 +250,8 @@ static void VS_CC waifu2xCreate(const VSMap *in, VSMap *out, void *userData, VSC
     int numProcessors;
     const W2XConvProcessor * processors = w2xconv_get_processor_list(&numProcessors);
 
-    if (d.noise < 0 || d.noise > 2) {
-        vsapi->setError(out, "Waifu2x-w2xc: noise must be 0, 1 or 2");
+    if (d.noise < 0 || d.noise > 3) {
+        vsapi->setError(out, "Waifu2x-w2xc: noise must be 0, 1, 2 or 3");
         return;
     }
 
