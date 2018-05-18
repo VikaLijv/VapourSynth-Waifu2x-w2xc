@@ -14,7 +14,7 @@ The filter will generate .bin files at the same location of the model files for 
 Usage
 =====
 
-    w2xc.Waifu2x(clip clip[, int noise=1, int scale=2, int block=512, bint photo=False, int processor=-1, int gpu=1, bint list_proc=False, bint log=False])
+    w2xc.Waifu2x(clip clip[, int noise=1, int scale=2, int block=512, bint photo=False, int gpu=1, int processor=-1, bint list_proc=False, bint log=False])
 
 * clip: Clip to process. Only planar format with float sample type of 32 bit depth is supported.
 
@@ -30,8 +30,6 @@ Usage
 
 * photo: When set to false, it uses the anime-style model. When set to true, the photo model will be used instead. There are two sets of anime-style models, one is trained under RGB, the other is trained under Y (luma only). The RGB model will be used when the color family of the input is RGB, and the Y model will be used for all the other color family. Note that the photo model is only available for RGB, so this parameter has no effect for non-RGB input.
 
-* processor: Sets target processor. Any non-negative value supersedes the choice from `gpu`. Use `list_proc` to get the index of the available processors.
-
 * gpu: Controls the environment to use.
   * 0 = disable GPU
   * 1 = auto detect. It will run on the first available environment in the following order:
@@ -43,6 +41,8 @@ Usage
     * SSE3
     * OpenCV filter2D
   * 2 = force to use OpenCL
+
+* processor: Sets target processor. Any non-negative value supersedes the choice from `gpu`. Use `list_proc` to get the index of the available processors.
 
 * list_proc: Whether the processors list is drawn on the frame.
 

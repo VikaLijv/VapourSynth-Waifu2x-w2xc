@@ -239,13 +239,13 @@ static void VS_CC waifu2xCreate(const VSMap *in, VSMap *out, void *userData, VSC
 
     const bool photo = !!vsapi->propGetInt(in, "photo", 0, &err);
 
-    int processor = int64ToIntS(vsapi->propGetInt(in, "processor", 0, &err));
-    if (err)
-        processor = -1;
-
     W2XConvGPUMode gpu = static_cast<W2XConvGPUMode>(int64ToIntS(vsapi->propGetInt(in, "gpu", 0, &err)));
     if (err)
         gpu = W2XCONV_GPU_AUTO;
+
+    int processor = int64ToIntS(vsapi->propGetInt(in, "processor", 0, &err));
+    if (err)
+        processor = -1;
 
     const bool log = !!vsapi->propGetInt(in, "log", 0, &err);
 
@@ -267,13 +267,13 @@ static void VS_CC waifu2xCreate(const VSMap *in, VSMap *out, void *userData, VSC
         return;
     }
 
-    if (processor >= static_cast<int>(numProcessors)) {
-        vsapi->setError(out, "Waifu2x-w2xc: selected processor is not available");
+    if (gpu < 0 || gpu > 2) {
+        vsapi->setError(out, "Waifu2x-w2xc: gpu must be 0, 1 or 2");
         return;
     }
 
-    if (gpu < 0 || gpu > 2) {
-        vsapi->setError(out, "Waifu2x-w2xc: gpu must be 0, 1 or 2");
+    if (processor >= static_cast<int>(numProcessors)) {
+        vsapi->setError(out, "Waifu2x-w2xc: selected processor is not available");
         return;
     }
 
@@ -452,8 +452,8 @@ VS_EXTERNAL_API(void) VapourSynthPluginInit(VSConfigPlugin configFunc, VSRegiste
                  "scale:int:opt;"
                  "block:int:opt;"
                  "photo:int:opt;"
-                 "processor:int:opt;"
                  "gpu:int:opt;"
+                 "processor:int:opt;"
                  "list_proc:int:opt;"
                  "log:int:opt;",
                  waifu2xCreate, nullptr, plugin);
