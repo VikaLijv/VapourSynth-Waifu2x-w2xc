@@ -51,4 +51,4 @@ Usage
 
 Dependencies
 ============
-[w2xc](https://github.com/tanakamura/waifu2x-converter-cpp)
+[w2xc](https://github.com/DeadSix27/waifu2x-converter-cpp)

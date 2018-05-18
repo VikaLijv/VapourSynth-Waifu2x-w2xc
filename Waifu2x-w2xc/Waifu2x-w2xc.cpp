@@ -249,7 +249,7 @@ static void VS_CC waifu2xCreate(const VSMap *in, VSMap *out, void *userData, VSC
 
     const bool log = !!vsapi->propGetInt(in, "log", 0, &err);
 
-    int numProcessors;
+    size_t numProcessors;
     const W2XConvProcessor * processors = w2xconv_get_processor_list(&numProcessors);
 
     if (d.noise < 0 || d.noise > 3) {
@@ -267,7 +267,7 @@ static void VS_CC waifu2xCreate(const VSMap *in, VSMap *out, void *userData, VSC
         return;
     }
 
-    if (processor >= numProcessors) {
+    if (processor >= static_cast<int>(numProcessors)) {
         vsapi->setError(out, "Waifu2x-w2xc: selected processor is not available");
         return;
     }
@@ -283,7 +283,7 @@ static void VS_CC waifu2xCreate(const VSMap *in, VSMap *out, void *userData, VSC
     if (!!vsapi->propGetInt(in, "list_proc", 0, &err)) {
         std::string text;
 
-        for (int i = 0; i < numProcessors; i++) {
+        for (size_t i = 0; i < numProcessors; i++) {
             const W2XConvProcessor * p = &processors[i];
             const char * type;
 
